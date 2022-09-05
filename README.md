@@ -1,6 +1,6 @@
 # Solana smart contract - PDAs, CPI and Serialization
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app). In this project, I built on top of existing code from the tutorial to learn the following
+This project was bootstrapped from [Youtube Tutorial on PDAs and CPIs ](https://www.youtube.com/watch?v=p0eD29d8JCM). In this project, I built on top of existing code from the tutorial to learn the following
 1. Program Derived Addresses (PDAs) in Solana
 2. Cross Program Invocation (CPIs) in Solana
 3. Implement various methods of sending data buffers to Smart contract
