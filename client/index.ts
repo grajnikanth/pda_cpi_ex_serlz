@@ -235,11 +235,41 @@ export async function profilePDAInitialize(): Promise<void> {
     );
 }
 
+// Function to convert string to class AddressAccount to a Borsh Serialized buffer 
+export const createAddressBuffer = (address: string) => {
+    let strLength = address.length;
+    let buffer = new ArrayBuffer(512);
+
+    //512 bytes long Uint8Array
+    let addressUint8Array = new Uint8Array(buffer); 
+   
+    if(strLength > 512) {
+        throw new Error(`Address string is too long > 512 bytes, revise`); 
+    } 
+   
+    let encoder = new TextEncoder();
+    let addressArrayBuffer = encoder.encode(address);
+    
+    // Take the addressArrayBuffer and place at the front of the 512 Uint8Array buffer
+    addressUint8Array.set(addressArrayBuffer, 0);
+    let addressAccountInstance = new AddressAccount({address: addressUint8Array});
+    console.log('addressAccountInstance is ', addressAccountInstance);
+
+    // Borsh Serialize the instance to corresponding struct mapping
+    const addressAccountSerialized = borsh.serialize(AddressSchema, addressAccountInstance);
+    console.log('Borsh serialized Uint8Array is ', addressAccountSerialized);
+    const addressAccountBuffer = Buffer.from(addressAccountSerialized);
+    console.log('addressAccountBuffer is ', addressAccountBuffer);
+    return addressAccountBuffer;
+
+}
+
 export const updateAddress = async (address: string) => {
     
+    const buffer2 = createAddressBuffer(address);
     // ecom-contract instructionData enum updateAddress field is the first. So first bytes
     // shall be set to 0. Next need a 512 bytes to represent the new address
-    const buffers = [Buffer.from(Int8Array.from([0])), strToBuffer(address, 512)];
+    const buffers = [Buffer.from(Int8Array.from([0])), buffer2];
     console.log("Buffer array buffers = ", buffers);
     // Buffer.concat takes all buffers objects in an array and converts into one 
     // buffer object. Transaction instruction takes a buffer as data. So below
@@ -306,6 +336,7 @@ export const getAddress = async () => {
     console.log("address.address after deserialization from borsh", address.address)
 
     // looks like TextDecoder converts bytes to text
+    console.log("Decoded - convert above bytes to UTF-8 string")
     console.log(new TextDecoder().decode(address.address))
 }
 

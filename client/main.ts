@@ -5,6 +5,7 @@ import {
     setAddressProgramParams,
     initializeAddressPDA, 
     updateAddress, 
+    createAddressBuffer,
     getAddress,
     setProfileProgramParams,
     profilePDAInitialize,
@@ -17,8 +18,9 @@ const main = async() => {
     await checkEcomProgram();
     await setAddressProgramParams();
     // await initializeAddressPDA();
-    await updateAddress("25 Vialdo, RSM, CA, India");
-    // await getAddress();
+    await updateAddress("1243 via moulton parkway, Laguna Niguel, CA, USA");
+    await getAddress();
+    // createAddressBuffer("25 Vialdo, RSM, CA, Italy");
    
     // await setUpProfileProgramParams();
     // await profilePDAInitialize();
