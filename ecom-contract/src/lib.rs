@@ -171,77 +171,73 @@ pub fn process_instruction(
             ).map_err(|_| ProgramError::IncorrectProgramId)?;
         },
         EcomInstructionData::InitializeUserProfilePDA => {
-            // let account = next_account_info(accounts_iter)?; 
-            // let user_profile_account_pda_client = next_account_info(accounts_iter)?;
-            // let update_profile_contract = next_account_info(accounts_iter)?;
-            // let system_program = next_account_info(accounts_iter)?;
+            let account = next_account_info(accounts_iter)?; 
+            let user_profile_account_pda_client = next_account_info(accounts_iter)?;
+            let update_profile_contract = next_account_info(accounts_iter)?;
+            let system_program = next_account_info(accounts_iter)?;
 
-            // let (user_profile_account_pda_program, profile_bump) = get_user_profile_account_pda(account, program_id);
+            let (user_profile_account_pda_program, profile_bump) = get_user_profile_account_pda(account, program_id);
           
-            // if user_profile_account_pda_program != *user_profile_account_pda_client.key {
-            //   msg!("Incorrect user Profile PDA as input");
-            //   msg!(&user_profile_account_pda_client.key.to_string());
-            //   return Err(ProgramError::InvalidInstructionData)
-            // }
+            if user_profile_account_pda_program != *user_profile_account_pda_client.key {
+              msg!("Incorrect user Profile PDA as input");
+              msg!(&user_profile_account_pda_client.key.to_string());
+              return Err(ProgramError::InvalidInstructionData)
+            }
 
-            // msg!("space needed to store user profile data is {}",std::mem::size_of::<UserProfileSchema>());
-            // msg!("lamports needed to store above space {}",Rent::get()?.minimum_balance(std::mem::size_of::<UserProfileSchema>()));
+            msg!("space needed to store user profile data is {}",std::mem::size_of::<UserProfileSchema>());
+            msg!("lamports needed to store above space {}",Rent::get()?.minimum_balance(std::mem::size_of::<UserProfileSchema>()));
 
-            // invoke_signed(
-            //     &system_instruction::create_account(
-            //         account.key, 
-            //         user_profile_account_pda_client.key,
-            //         Rent::get()?.minimum_balance(std::mem::size_of::<UserProfileSchema>()),
-            //         std::mem::size_of::<UserProfileSchema>().try_into().unwrap(),
-            //         update_profile_contract.key,
-            //     ),
-            //     &[user_profile_account_pda_client.clone(), account.clone(), system_program.clone()],
-            //     &[&[b"profile", account.key.as_ref(), &[profile_bump]]],
-            // )?;
+            invoke_signed(
+                &system_instruction::create_account(
+                    account.key, 
+                    user_profile_account_pda_client.key,
+                    Rent::get()?.minimum_balance(std::mem::size_of::<UserProfileSchema>()),
+                    std::mem::size_of::<UserProfileSchema>().try_into().unwrap(),
+                    update_profile_contract.key,
+                ),
+                &[user_profile_account_pda_client.clone(), account.clone(), system_program.clone()],
+                &[&[b"profile", account.key.as_ref(), &[profile_bump]]],
+            )?;
         },
         
         EcomInstructionData::UpdateUserInfo => {
-        //     msg!("Update proofile Instruction reached");
+            msg!("Update proofile Instruction reached");
 
-        //     let account = next_account_info(accounts_iter)?;
-        //     let user_profile_account_pda_client = next_account_info(accounts_iter)?;
-        //     let profile_address_contract = next_account_info(accounts_iter)?;
+            let account = next_account_info(accounts_iter)?;
+            let user_profile_account_pda_client = next_account_info(accounts_iter)?;
+            let profile_address_contract = next_account_info(accounts_iter)?;
 
-        //     let (user_profile_account_pda_program, profile_bump) = get_user_profile_account_pda(account, program_id);
+            let (user_profile_account_pda_program, profile_bump) = get_user_profile_account_pda(account, program_id);
           
-        //     if user_profile_account_pda_program != *user_profile_account_pda_client.key {
-        //       msg!("Incorrect user Profile PDA as input");
-        //       msg!(&user_profile_account_pda_client.key.to_string());
-        //       return Err(ProgramError::InvalidInstructionData)
-        //     }
+            if user_profile_account_pda_program != *user_profile_account_pda_client.key {
+              msg!("Incorrect user Profile PDA as input");
+              msg!(&user_profile_account_pda_client.key.to_string());
+              return Err(ProgramError::InvalidInstructionData)
+            }
 
-        //     let mut accounts_meta = Vec::new();
-        //     accounts_meta.push(
-        //         AccountMeta {
-        //             pubkey: *user_profile_account_pda_client.key,
-        //             is_signer: true,
-        //             is_writable: true
-        //         }
-        //     );
+            let mut accounts_meta = Vec::new();
+            accounts_meta.push(
+                AccountMeta {
+                    pubkey: *user_profile_account_pda_client.key,
+                    is_signer: true,
+                    is_writable: true
+                }
+            );
 
-        //     let instruction_data_struct = UserProfileInstructionData {
-        //         name: name,
-        //         date: date,
-        //         month: month,
-        //         year: year
-        //     };
+            let instruction_data_struct = UserProfileInstructionData::try_from_slice(&data)?;
+            msg!("data vec<u8> being sent to profile-contract is {:?}", instruction_data_struct.try_to_vec()?);
 
-        //     let instruction = Instruction {
-        //         program_id: *profile_address_contract.key,
-        //         accounts: accounts_meta,
-        //         data: instruction_data_struct.try_to_vec()?
-        //     };
+            let instruction = Instruction {
+                program_id: *profile_address_contract.key,
+                accounts: accounts_meta,
+                data: instruction_data_struct.try_to_vec()?
+            };
 
-        //     invoke_signed(
-        //         &instruction,
-        //         &[user_profile_account_pda_client.clone()],
-        //         &[&[b"profile", account.key.as_ref(), &[profile_bump]]]
-        //     ).map_err(|_| ProgramError::IncorrectProgramId)?;
+            invoke_signed(
+                &instruction,
+                &[user_profile_account_pda_client.clone()],
+                &[&[b"profile", account.key.as_ref(), &[profile_bump]]]
+            ).map_err(|_| ProgramError::IncorrectProgramId)?;
         }
 
     }

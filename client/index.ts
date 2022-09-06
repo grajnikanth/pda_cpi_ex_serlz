@@ -65,9 +65,9 @@ const ProfileSchema = new Map([
         kind: 'struct', 
         fields: [
                 ['name', [64]], 
-                ['date', 'number'],
-                ['month', 'number'],
-                ['year', 'number']
+                ['date', 'u32'],
+                ['month', 'u32'],
+                ['year', 'u32']
         ]}]
 ]);
 
@@ -293,13 +293,49 @@ export const updateAddress = async (address: string) => {
     );
 }
 
+// Function to convert string to class AddressAccount to a Borsh Serialized buffer 
+export const createProfileBuffer = (name: string, date: number, month: number, year: number) => {
+    let strLength = name.length;
+    let buffer = new ArrayBuffer(64);
+
+    //512 bytes long Uint8Array
+    let profileUint8Array = new Uint8Array(buffer); 
+   
+    if(strLength > 64) {
+        throw new Error(`Name string is too long > 64 bytes, revise`); 
+    } 
+   
+    let encoder = new TextEncoder();
+    let profileArrayBuffer = encoder.encode(name);
+    
+    // Take the addressArrayBuffer and place at the front of the 512 Uint8Array buffer
+    profileUint8Array.set(profileArrayBuffer, 0);
+    let profileAccountInstance = new ProfileAccount({
+        name: profileUint8Array,
+        date: date,
+        month: month,
+        year: year
+    });
+    console.log('profileAccountInstance is ', profileAccountInstance);
+
+    // Borsh Serialize the instance to corresponding struct mapping
+    const profileAccountSerialized = borsh.serialize(ProfileSchema, profileAccountInstance);
+    console.log('Borsh serialized Uint8Array is ', profileAccountSerialized);
+    const profileAccountBuffer = Buffer.from(profileAccountSerialized);
+    console.log('profileAccountBuffer is ', profileAccountBuffer);
+    console.log('date bytes from the profile buffer ',profileAccountBuffer.slice(64,68));
+    console.log('month bytes from the profile buffer ',profileAccountBuffer.slice(68,72));
+    console.log('Year bytes from the profile buffer ',profileAccountBuffer.slice(72));
+    return profileAccountBuffer;
+
+}
+
 export const updateProfile = async(name: string, date: number, month: number, year: number) => {
+    
+    let buffer2 = createProfileBuffer(name, date, month, year);
     const buffers = [
         Buffer.from(Uint8Array.from([3])), 
-        strToBuffer(name, 64),
-        numberToBuffer(date, 4),
-        numberToBuffer(month, 4),
-        numberToBuffer(year, 4),
+        buffer2
     ];
     console.log('buffers value = ', buffers);
     const data = Buffer.concat(buffers);
@@ -338,5 +374,23 @@ export const getAddress = async () => {
     // looks like TextDecoder converts bytes to text
     console.log("Decoded - convert above bytes to UTF-8 string")
     console.log(new TextDecoder().decode(address.address))
+}
+
+export const getProfile = async () => {
+    const accountInfo = await connection.getAccountInfo(profileAccountPDA);
+    const profile = borsh.deserialize(
+        ProfileSchema,
+        ProfileAccount,
+        accountInfo.data,
+    );
+
+    console.log("AccountInfo<buffer> from blockchain is ", accountInfo);
+    console.log("PDA account data from Blockchain ", accountInfo.data);
+    console.log("ProfileAccount instance address is ", profile);    
+    console.log("profile.name after deserialization from borsh", profile.name);
+
+    // looks like TextDecoder converts bytes to text
+    console.log("Decoded - convert above bytes to UTF-8 string");
+    console.log(new TextDecoder().decode(profile.name));
 }
 
